@@ -1,6 +1,5 @@
 
 **Identifiability and Parameter Estimation for Dengue Transmission Model**
-=======
 ----------
 
 ##overview
