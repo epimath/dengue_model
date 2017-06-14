@@ -25,7 +25,7 @@ import pickle
 
 from dengue_model import dengue_model
 from param_est import param_est
-from profile.py import profile
+from profile import profile
 
 
 
@@ -170,7 +170,7 @@ for q,r in temp_ee2:
 			newparam.insert(q, var1_temp)
 			newparam.insert(r, var2_temp) #create new param list
 			est=param_est(dengue.model, ini, time_step)
-			err=est.residues(newparam, data_mw) #calculate RSS
+			err=est.residuals(newparam, data_mw) #calculate RSS
 			error_ls.append(err)
 
 	print len(var1_run),len(var2_run),len(error_ls)

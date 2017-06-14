@@ -2,7 +2,7 @@
 #### Main script #######
 #### Yu-Han Kao ########
 #### kaoyh@umich.edu ###
-#### 12/05/2016 ########
+#### 06/12/2017 ########
 ########################
 
 #this script runs parameter estimation and profile likelihood of the dengue model. 
@@ -26,7 +26,7 @@ import pickle
 from dengue_model import dengue_model
 from param_est import param_est
 from profile import profile
-from residual_sigma import sigma
+from residual_sigma import sigmasq
 
 '''
 #plot formatting(optional)
@@ -92,7 +92,7 @@ print optimizer
 # continue optimization from the previous fitted values if needed
 count = 0
 while count < 40:
-	if optimizer.success==True and optimizer.fun < 93.75: ###105 #3276
+	if optimizer.success==True and optimizer.fun < 93.75: #set the threshold
 		print 'done'
 		print optimizer
 		break
@@ -140,8 +140,8 @@ data_mw = 7*(res_inc_t1+6.0/7.0) - 7*np.append(np.array([0]), (res_inc_t0+6.0/7.
 #calculate sigma
 #resisq=(data_mw-data_case)**2
 #print 'sigma', ((sum(resisq))/float(len(data_mw)-len(param)))**(0.5)
-dengue_sigma = sigma(data_case, data_mw, param)
-print 'sigma: ', dengue_sigma
+dengue_sigmasq = sigmasq(data_case, data_mw, param)
+print 'sigmasq: ', dengue_sigmasq
 
 
 #calculate r0
@@ -233,7 +233,7 @@ sim_iem=sim_Im+sim_Em #mock data for collecting infected mosquitoes
 '''==============================calculate parmameter likelihood surface =============================='''
 
 #making range list for parameter profiling
-dengue_profile=profile(opt_dengue.model, opt_param, opt_ini, time_step, 10, 60) 
+dengue_profile=profile(opt_dengue.model, opt_param, opt_ini, time_step, 15, 80) 
 param_name=['beta', 'repH', 'x', 'pi_mua', 'beta_m', 'mu_m']
 
 
@@ -248,50 +248,51 @@ for i in range(len(opt_param)):
 		proflog_temp={}
 		param_fix=[dengue_profile.param[x] for x in fix_ind]
 		fit_ind=list(set(param_test_ind)-set(fix_ind))
-		param_fit=[dengue_profile.param[p_f] for p_f in fit_ind]
+		#param_fit=[dengue_profile.param[p_f] for p_f in fit_ind]
+		for sub_ls in param_adj_ls:
+			param_fit=[dengue_profile.param[p_f] for p_f in fit_ind]
+			for m in sub_ls:
+				param_adj=[m]
+				adj_ind=[i]
+	
+				print param_fit
+				print param_adj
+				
+				optimizer_pl=spopt.minimize(dengue_profile.sse_proflike, param_fit, args=(sim_case, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
+				#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, param_fit, args=(sim_case, sim_Am, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
+				#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, param_fit, args=(sim_case, sim_Am, sim_adultm, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
+				#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, param_fit, args=(sim_case, sim_Am, sim_Sm, sim_iem, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
+				
+				count=0
+				while count <10:
+					if optimizer_pl.success==True:
+						print optimizer_pl
+						break
+					else:
+						optimizer_pl=spopt.minimize(dengue_profile.sse_proflike, optimizer_pl.x, args=(sim_case, param_adj, fit_ind, adj_ind), method='Nelder-Mead')#BFGS
+						#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, optimizer_pl.x, args=(sim_case, sim_Am, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
+						#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, optimizer_pl.x, args=(sim_case, sim_Am, sim_adultm, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
+						#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, optimizer_pl.x, args=(sim_case, sim_Am, sim_Sm, sim_iem, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
+						count+=1
+						print count, 'not done yet...'
+						print 'optimization results: ', optimizer_pl
+				param_fit=optimizer_pl.x # to start from previous estimated parameters		
+				p_val_error=np.append(optimizer_pl.x,optimizer_pl.fun)
+				temptemp=np.absolute(p_val_error)
+				temptemp_abs=temptemp.tolist()
+				temptemp_abs.append(optimizer_pl.success)
+				proflog_temp[m]=temptemp_abs	
+				
+			fix_name=[param_name[z] for z in fix_ind]
+			s="_"
+			f_ns=str(fit_ind)[1:-1]
+			fix_name_lb=str(s.join(fix_name)+'_['+f_ns+']')
+			proflog[fix_name_lb]=proflog_temp
+			#print proflog_temp
 
-		for m in param_adj_ls:
-			param_adj=[m]
-			adj_ind=[i]
-
-			print param_fit
-			print param_adj
-			
-			optimizer_pl=spopt.minimize(dengue_profile.sse_proflike, param_fit, args=(sim_case, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
-			#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, param_fit, args=(sim_case, sim_Am, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
-			#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, param_fit, args=(sim_case, sim_Am, sim_adultm, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
-			#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, param_fit, args=(sim_case, sim_Am, sim_Sm, sim_iem, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
-
-			count=0
-			while count <5:
-				if optimizer_pl.success==True:
-					print optimizer_pl
-					break
-				else:
-					optimizer_pl=spopt.minimize(dengue_profile.sse_proflike, optimizer_pl.x, args=(sim_case, param_adj, fit_ind, adj_ind), method='Nelder-Mead')#BFGS
-					#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, optimizer_pl.x, args=(sim_case, sim_Am, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
-					#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, optimizer_pl.x, args=(sim_case, sim_Am, sim_adultm, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
-					#optimizer_pl=spopt.minimize(dengue_profile.sse_vec_proflike, optimizer_pl.x, args=(sim_case, sim_Am, sim_Sm, sim_iem, param_adj, fit_ind, adj_ind), method='Nelder-Mead')
-					count+=1
-					print count, 'not done yet...'
-					print 'optimization results: ', optimizer_pl
-					
-			p_val_error=np.append(optimizer_pl.x,optimizer_pl.fun)
-			temptemp=np.absolute(p_val_error)
-			temptemp_abs=temptemp.tolist()
-			temptemp_abs.append(optimizer_pl.success)
-			proflog_temp[m]=temptemp_abs	
-			
-		fix_name=[param_name[z] for z in fix_ind]
-		s="_"
-		f_ns=str(fit_ind)[1:-1]
-		fix_name_lb=str(s.join(fix_name)+'_['+f_ns+']')
-		proflog[fix_name_lb]=proflog_temp
-		#print proflog_temp
-
-	pl_data=open('pf_data_human_01162017_'+param_name[i]+'.txt','w')
+	pl_data=open('pf_data_human_'+param_name[i]+'.txt','w')
 	pl_data.write (str(proflog))
 	pl_data.close()
-	pickle.dump(proflog,open('pf_data_human_01162017_'+param_name[i]+'.pickle','wb')) #save as pickle for plotting
+	pickle.dump(proflog,open('pf_data_human_'+param_name[i]+'.pickle','wb')) #save as pickle for plotting
 
 #===end===#

@@ -19,6 +19,7 @@ import math
 
 from dengue_model_intervention import dengue_model_itv
 from dengue_model import dengue_model
+from residual_sigma import sigmasq
 
 
 ori_data_case=[1.0, 0.0, 1.0, 1.0, 3.0, 1.0, 0.0, 2.0, 1.0, 0.0, 
@@ -106,6 +107,9 @@ print opt_res1
 print opt_res2
 print opt_res_ori
 
+dengue_sigmasq = sigmasq(data_case, data_mw_ori, opt_param1)
+print 'sigmasq: ', dengue_sigmasq
+
 
 ##R0
 Sm_DFE = (opt_param1[2] - opt_param1[3]*opt_param1[5])/(opt_param1[2]*opt_param1[5])
@@ -122,17 +126,23 @@ print R0
 
 
 #plotting origianal data and fitted curve
-pl.figure()
+pl.figure(figsize=(12,9))
+
 pl.plot
-pl.plot(data_mw1,'r',linewidth=3.5, label= 'exp1_intervention')
-pl.plot(data_mw2,'k', linewidth=3.5, label= 'exp2_intervention')
+#pl.plot(data_mw1,'r',linewidth=3.5, label= 'exp1_intervention')
+#pl.plot(data_mw2,'k', linewidth=3.5, label= 'exp2_intervention')
 #pl.plot(data_mw1,'r',linewidth=3.5)# label='data_model_weekly'
 #pl.plot(data_mw2,'g',linewidth=3.5)
 #pl.plot(data_case,'bo', data_case, 'k')#label='data_2010_tw'
-pl.plot(data_mw_ori,'b', linewidth=3.5, label='fit_2010_tw')
-pl.xticks(fontsize = 18)
-pl.yticks(fontsize = 18)
-pl.legend()
+pl.plot(data_mw_ori,'r', linewidth=4.0, label='simulated epidemic curve')
+pl.plot(data_case, 'ko-', linewidth=2.0, ms=10.0, label='2010 dengue incidence in Kaohsiung')
+
+pl.xticks(fontsize = 24)
+pl.yticks(fontsize = 24)
+pl.xlabel ('time', fontsize =26)
+pl.ylabel ('cases',fontsize =26)
+pl.legend(fontsize = 18, frameon=False)
+
 pl.show()
 #pl.savefig('fitting_eta_2_0422')
 
