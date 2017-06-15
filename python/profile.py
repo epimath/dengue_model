@@ -38,6 +38,21 @@ class profile:
 
 
 	#############################################################
+	########## List for a range of values  ######################
+	########## of the prameter we want to profile ###############
+	#############################################################
+	def adj_param_list (self, adj_var):
+		param_adj_ls=[]
+		for j in range(len(self.pert_level)): #create a list of values for the adjusted parameter
+			param_adj_ls.append(adj_var*self.pert_level[j])
+			if self.pert_level[j]<=1.0:
+				param_adj_ls.append(adj_var+self.pert_level[j])
+				param_adj_ls.append(adj_var-self.pert_level[j])
+		param_adj_ls.sort()
+		return param_adj_ls
+
+
+	#############################################################
 	####### lists for values of the parameter we want to ########
 	####### profile and index of fixed and fitted parameters ####
 	#############################################################
@@ -45,18 +60,28 @@ class profile:
 	def fit_fix(self, adj_ind=None, fixed_n=0):
 		param_test=copy.copy(self.param)
 		param_test_ind=list(set(range(len(self.param)))-set([adj_ind]))#the index of the parameters we want to fit while profiling
+		param_adj_temp=param_test.pop(adj_ind) 
 		param_test=np.array(param_test)
-		param_adj_ls=[] #the list of values for the parameter we want to profile (adjusted parameter) across the range of perturbation
-		for j in range(len(self.pert_level)): #create a list of values for the adjusted parameter
+		param_adj_ls=[] #tthe list of values for the parameter we want to profile (adjusted parameter) across the range of perturbation
+		param_adj_ls_up=[param_adj_temp]
+		param_adj_ls_low=[param_adj_temp]
+		for j in range(len(self.pert_level)): #create a list of perturbation values for the adjusted parameter
 			param_adj_ls.append(param_adj_temp*self.pert_level[j])
 			if self.pert_level[j]<=1.0:
-				param_adj_ls.append(param_adj_temp+self.pert_level[j])
-				param_adj_ls.append(param_adj_temp-self.pert_level[j])
+				param_adj_ls.append(abs(param_adj_temp+self.pert_level[j]))
+				param_adj_ls.append(abs(param_adj_temp-self.pert_level[j]))
 		param_adj_ls.sort()
-		param_fix_temp=itertools.combinations(param_test_ind, fixed_n) #choose the parameters you want to fix while profiling
-		fit_fix_list=[param_adj_ls, param_fix_temp, param_test_ind]
+		for n in param_adj_ls:
+			if n > param_adj_temp:
+				param_adj_ls_up.append(n)
+			if n < param_adj_temp:
+				param_adj_ls_low.append(n)
+		param_adj_ls_up.sort()
+		param_adj_ls_low.sort(reverse=True)
+		param_adj_ls_all=[param_adj_ls_up, param_adj_ls_low]
+		param_fix_temp=itertools.combinations(param_test_ind, fixed_n) #choose the/how many parameters you want to fix
+		fit_fix_list=[param_adj_ls_all, param_fix_temp, param_test_ind]
 		return fit_fix_list
-
 
 	#############################################################
 	########## Profile likelihood function ######################
@@ -106,7 +131,7 @@ class profile:
 		res_inc_t0=np.append(np.array([0]),spi.cumtrapz(abs(repH)*alpha*res[0:-1,1]))
 		data_mw=7*(res_inc_t1+6.0/7.0) - 7*np.append(np.array([0]), (res_inc_t0+6.0/7.0))
 		#err=np.sum((case_data-data_mw)**2) #normal SSE
-		err=np.sum((case_data-data_mw)**2/np.mean(data_mw)) #weighted SSE changed on 02/06/2016
+		err=np.sum((case_data-data_mw)**2/np.mean(case_data)) #weighted SSE changed on 02/06/2016
 		#err=np.sum((case_data-data_mw)**2/(np.mean(data_mw))**0.5) #weighted SSE with squared root demoninator 12/17/2016 try
 		print param_fit, param_adj
 		print err
@@ -163,17 +188,17 @@ class profile:
 		res_inc_t1=np.append(np.array([0]),spi.cumtrapz(abs(repH)*alpha*res[:,1]))
 		res_inc_t0=np.append(np.array([0]),spi.cumtrapz(abs(repH)*alpha*res[0:-1,1]))
 		data_mw=7*(res_inc_t1+6.0/7.0) - 7*np.append(np.array([0]), (res_inc_t0+6.0/7.0))
-		err1=np.sum((case_data-data_mw)**2/np.mean(data_mw)) #weighted SSE changed on 02/06/2016
+		err1=np.sum((case_data-data_mw)**2/np.mean(case_data)) #weighted SSE changed on 02/06/2016
 
 		data_m_vadult=res[:,4]+res[:,5]+res[:,6] #adult mosquitoes 
 		data_m_vsus=res[:,4] #adult susceptiable
 		data_m_vinf=res[:,5]+res[:,6] #infected adult mosquitoes
 		data_m_vlarva=res[:,3] #larva
 
-		err2=np.sum((vec_data1-data_m_vlarva)**2/np.mean(data_m_vlarva)) ### larva data only
-		###err3=np.sum((vec_data2-data_m_vadult)**2/np.mean(data_m_vadult)) ### larva+adult
-		###err3=np.sum((vec_data2-data_m_vsus)**2/np.mean(data_m_vsus)) ### larva+sus+inf
-		###err4=np.sum((vec_data3-data_m_vinf)**2/np.mean(data_m_vinf)) ###larva+sus+inf
+		err2=np.sum((vec_data1-data_m_vlarva)**2/np.mean(vec_data1)) ### larva data only
+		###err3=np.sum((vec_data2-data_m_vadult)**2/np.mean(vec_data2)) ### larva+adult
+		###err3=np.sum((vec_data2-data_m_vsus)**2/np.mean(vec_data2)) ### larva+sus+inf
+		###err4=np.sum((vec_data3-data_m_vinf)**2/np.mean(vec_data3)) ###larva+sus+inf
 
 		err=(err1+err2)/2.0
 		###err=(err1+err2+err3)/3.0

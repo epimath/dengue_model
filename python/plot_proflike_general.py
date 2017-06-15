@@ -9,14 +9,14 @@ from matplotlib import rc
 rc('mathtext', default='regular')
 
 #calculate threshold
-sigma=11.4509097794 
-threshold=sigma*stats.chi2.ppf(0.95,6)
+sigmasq=119.476832507
+threshold=sigmasq*stats.chi2.ppf(0.95,6)
 ########################
 
-fname="pf_data_human_01062017_beta.pickle"
+fname="pf_data_human_repH.pickle"#"pf_data_human_beta.pickle"
 #ftemp=open(fname,'rb')
 
-adj_param_name=fname[23:-7]
+adj_param_name=fname[14:-7]
 print adj_param_name
 
 #temp=ast.literal_eval(fread) #not safe, if it's not for python structures: ast.literal_eval
@@ -37,7 +37,7 @@ print fit_name_list
 
 temp_values=temp.values()
 count=0
-for i in temp_values: #iterate throught each fixted parameter set
+for i in temp_values: #iterate throught each fixed parameter set
 	x_value=[abs(x) for x in i.keys()]
 	y_value_ls=i.values()
 	temp_yvalue=[] # fitted values for parameters
@@ -154,10 +154,9 @@ for i in temp_values: #iterate throught each fixted parameter set
 				small_fit.append(y_value[k])
 		
 		pl.scatter(x_value, y_value,label=fit_name,color='r')
-		print 'mao'
 		print y_value
 		pl.scatter(small_x,small_fit, label=fit_name+'_small sse', color='b')
-		
+		#print adj_param_name
 		pl.title(adj_param_name)
 		pl.xlabel(adj_param_name+'_param value')
 		pl.ylabel(fit_name)
