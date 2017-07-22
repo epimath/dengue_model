@@ -72,7 +72,7 @@ class fim:
 			listX.append(subX.tolist()[1::]) #ignore t0 since it's fixed in our case
 		X = np.matrix(listX)
 		#print 'X',X
-		FIM = np.dot(X.transpose(),X)
+		FIM = np.dot(X,X.transpose())
 		return FIM
 	
 	def Fim_rank(self, FIM):
